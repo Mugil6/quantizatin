@@ -1,0 +1,41 @@
+name: CI/CD Pipeline
+
+on: [push]
+
+jobs:
+  build_and_test_container:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run training
+        run: |
+          python train.py
+
+      - name: Build Docker Image
+        run: |
+          docker build -t mlops3-image .
+
+      - name: Run Docker Container
+        run: |
+          docker run mlops3-image
+
+      - name: Docker Login and Push
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          docker tag mlops3-image $DOCKER_USERNAME/mlops3-image
+          docker push $DOCKER_USERNAME/mlops3-image
